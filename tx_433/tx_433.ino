@@ -12,21 +12,20 @@ pin 12 5v
 pin 14 Arduino pin digital 2
 pin 15 5v
 */
-
 #include <VirtualWire.h>
 #define RECEIVE_PIN 2
 
 int recibidos = 0;
 
-uint8_t calculateCRC5USB(uint8_t *data, uint8_t length) {
-  uint8_t crc = 0x00;
-  uint8_t polynomial = 0x25;
+uint16_t calculateCRC5USB(uint8_t *data, uint8_t length) {
+  uint16_t crc = 0x1F;
+  uint16_t polynomial = 0x25;
 
   for (uint8_t i = 0; i < length; i++) {
     crc ^= data[i];
 
     for (uint8_t j = 0; j < 8; j++) {
-      if (crc & 0x80) {
+      if (crc & 0x10) {
         crc = (crc << 1) ^ polynomial;
       } else {
         crc <<= 1;
@@ -34,7 +33,7 @@ uint8_t calculateCRC5USB(uint8_t *data, uint8_t length) {
     }
   }
 
-  return (crc >> 3) & 0x1F;// El CRC5 se toma de los 5 bits más significativos
+  return crc & 0x1F;
 }
 
 void setup() {
@@ -61,28 +60,30 @@ void loop() {
     memcpy(mensaje, buf + 8, 8);
     mensaje[8] = '\0';
        
-    // Extraer y calcular el CRC
     uint8_t receivedCRC = buf[5];
     uint8_t calculatedCRC = calculateCRC5USB(&buf[8], 8);
 
-
-    if (destino[0] == 0x00 && (destino[1] == destinoEsperado[0] || destino[1] == destinoEsperado[1])) {
+    if ((destino[0] == 0x00 && destino[1] == destinoEsperado[0]) || (destino[0] == 0x00 && destino[1] == destinoEsperado[1])) {
       
       Serial.print("[Origen: ");
       Serial.print(origen[0], HEX);
       Serial.print(origen[1], HEX);
-      if(destino[1] == 0x00) Serial.print(" - Broadcast: ");
-      else Serial.print(" - Unicast: ");
+      if(destino[1] == 0x00) Serial.print(" - Broadcast ");
+      else Serial.print(" - Unicast ");
 
       Serial.print(destino[0], HEX);
       Serial.print(destino[1], HEX);
+
+      Serial.print(" P(");
+      Serial.print(secuencia, HEX);
+      Serial.print(":");
+      Serial.print(total, HEX);
+      Serial.print(")");
       Serial.print("] > ");
       //Serial.print("Destino: ");
       //Serial.print(destino[0], HEX);
       //Serial.print(destino[1], HEX);
       //Serial.print("  Secuencia: ");
-      //Serial.print(secuencia, HEX);
-      //Serial.print("  Total: ");
       //Serial.print(total, HEX);
       //Serial.print("  Mensaje: ");
       Serial.println(mensaje);
