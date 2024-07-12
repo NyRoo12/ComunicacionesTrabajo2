@@ -14,24 +14,24 @@ pin 10 5v
 
 #define TRANSMIT_PIN 2
 
-// Función para calcular CRC-5-USB
-uint8_t calculateCRC5USB(uint8_t *data, uint8_t length) {
-  uint8_t crc = 0x1F;  // Inicializar CRC con 0b11111
-  uint8_t polynomial = 0x25; // Polinomio 0b00100101 para x^5 + x^2 + 1
+uint16_t calculateCRC5USB(uint8_t *data, uint8_t length) {
+  uint16_t crc = 0x1F;
+  uint16_t polynomial = 0x25;
 
   for (uint8_t i = 0; i < length; i++) {
     crc ^= data[i];
+
     for (uint8_t j = 0; j < 8; j++) {
-      if (crc & 0x80) {
+      if (crc & 0x10) {
         crc = (crc << 1) ^ polynomial;
       } else {
         crc <<= 1;
       }
     }
   }
-  return (crc >> 3) & 0x1F; // El CRC5 se toma de los 5 bits más significativos
-}
 
+  return crc & 0x1F;// El CRC5 se toma de los 5 bits más significativos
+}
 void imprimirPaquete(const uint8_t* paquete, size_t longitud) {
     for (size_t i = 0; i < longitud; ++i) {
         if (paquete[i] < 0x10) {
@@ -66,9 +66,9 @@ void loop() {
 
     // Datos del paquete
     uint8_t origen[2] = {0x00, 0x07};   // Ejemplo origen
-    uint8_t destino[2] = {0x00, 0x00};  // Ejemplo destino
+    uint8_t destino[2] = {0x00, 0x05};  // Ejemplo destino
     uint8_t secuencia = 0x01;           // Número de secuencia inicial
-    uint8_t total = (input.length() + 7) / 8;  // Número total de paquetes (redondeo hacia arriba)
+    uint8_t total = (input.length() + 7) / 8;  
 
     for (uint8_t i = 0; i < total; i++) {
       uint8_t mensaje[8] = {0}; // Inicializar mensaje con ceros
